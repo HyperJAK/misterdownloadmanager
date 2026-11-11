@@ -2404,6 +2404,26 @@ impl OptionsDialog {
             crate::i18n::t("Used by the list of downloads and the Scheduler."),
             LIGHT_DISABLED(),
         );
+        // The interface (the General page has no row left): the new look and main window, or
+        // the one before it. OK offers to restart MDM, which shows it.
+        group(ui, o, 16.0, 356.0, 392.0, 64.0, "Interface");
+        winui::checkbox_light(
+            ui,
+            o + vec2(30.0, 376.0),
+            &mut self.s.new_interface,
+            // i18n: checkbox in Options: ticked, the program shows its new look (Material); unticked, the look it had before
+            crate::i18n::mark("Use the new interface"),
+            true,
+        );
+        winui::text_in_window(
+            ui,
+            &p,
+            o.x + 46.0,
+            o.y + 404.0,
+            // i18n: a note under the "Use the new interface" checkbox
+            crate::i18n::t("Changes once Mister Download Manager has restarted."),
+            LIGHT_DISABLED(),
+        );
     }
 
     fn sounds(&mut self, ui: &mut Ui, o: Pos2) {

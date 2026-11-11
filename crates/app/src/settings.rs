@@ -102,10 +102,14 @@ pub struct Settings {
     /// View → Always dark (#60): dark whatever the system says (a desktop that reports no
     /// preference, or a dark MDM on a light desktop).
     pub always_dark: bool,
-    /// The look (#45): a built-in theme's id ("material", what a new installation starts in;
-    /// a saved choice stays) or a theme file's name in
-    /// the data folder's `themes` folder (crate::themefile).
+    /// The look (#45) while `new_interface` is off: a built-in theme's id ("classic", the
+    /// default) or a theme file's name in the data folder's `themes` folder (crate::themefile).
     pub theme: String,
+    /// Options → Regional → Use the new interface: MDM is drawn in Material (the new look and
+    /// main window), whatever `theme` says; off, in `theme`. On unless turned off, so a copy
+    /// updated from a version without it shows the new interface too. Options applies it from
+    /// the next start (it offers to restart); View → Theme switches at once.
+    pub new_interface: bool,
     /// View → Draw with (#89): OpenGL or Direct3D (Windows only), used from the next start.
     /// None: MDM's default (`renderer::DEFAULT`), which may change.
     pub renderer: Option<crate::renderer::Api>,
@@ -342,6 +346,17 @@ pub const BROWSERS: [&str; 12] = [
 ];
 
 impl Settings {
+    /// The theme MDM is drawn in: Material while the new interface is on, else the chosen one.
+    pub fn look(&self) -> &str {
+        if self.new_interface {
+            "material"
+        } else {
+            &self.theme
+        }
+    }
+}
+
+impl Settings {
     /// A list saved before a browser was known gets it, captured (as an unlisted browser
     /// already is, capture::CaptureRules::captures), so Options shows it.
     pub fn list_known_browsers(&mut self) {
@@ -376,7 +391,8 @@ impl Default for Settings {
             view: None,
             dark_mode_support: true,
             always_dark: false,
-            theme: "material".into(),
+            theme: "classic".into(),
+            new_interface: true,
             renderer: None,
             interface_size: 100,
             smooth_text: false,
@@ -1112,6 +1128,20 @@ mod tests {
     }
 
     use super::*;
+
+    /// A copy updated from a version without the switch shows the new interface; switched off,
+    /// the look it had chosen comes back.
+    #[test]
+    fn the_new_interface_is_on_until_switched_off() {
+        let old: Settings = serde_json::from_str(r#"{"theme":"breeze"}"#).unwrap();
+        assert!(old.new_interface);
+        assert_eq!(old.look(), "material");
+        let off: Settings =
+            serde_json::from_str(r#"{"theme":"breeze","new_interface":false}"#).unwrap();
+        assert_eq!(off.look(), "breeze");
+        assert_eq!(Settings::default().look(), "material");
+        assert_eq!(Settings::default().theme, "classic");
+    }
 
     /// #40: torrents use only a manual SOCKS5 proxy, with its login; asked for one and given
     /// none, they don't start (no config) rather than go around it.

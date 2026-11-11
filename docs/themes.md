@@ -12,7 +12,7 @@ Open **View → Theme** and click a theme: the whole window changes at once, not
 **View → Dark Mode support** and **View → Always dark** then choose its light or dark side, as
 for the classic look ([Dark mode](getting-started.md#dark-mode)).
 
-The built-in themes are **Material** (Material Design 3's look in blue, what a new installation
+The built-in themes are **Material** (Material Design 3's look in blue, the new interface MDM
 starts in), **Classic** (MDM's first look), **Native** (your system's accent colour and
 contrast), **High contrast**, and the style themes **Metro**, **Adwaita**, **Breeze**, **Luna**,
 **Aero**, **Aqua** and **Emerald**, each with its own control shapes and icons, and on Windows

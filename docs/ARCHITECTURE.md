@@ -90,8 +90,9 @@ light and a dark palette, metrics, control styles and an icon style (`palette.rs
 - **Control styles.** `palette::Controls` names each control's shape (text boxes, check boxes,
   buttons, progress bars, scroll bars, tabs, the focus mark, the title bar, the main window's panes); the style themes
   (Material, Metro, Adwaita, Breeze, Luna, Aero, Aqua, Emerald) pick theirs, and where one asks
-  for its own title bar, on Windows MDM draws it itself (the `caption.*` roles). A new
-  installation starts in Material (`settings.rs`); a saved choice stays.
+  for its own title bar, on Windows MDM draws it itself (the `caption.*` roles). MDM is
+  drawn in Material while `Settings::new_interface` is on (Options' switch, on by default, applied
+  with a restart MDM offers), else in the chosen theme.
 - **Theme files.** `themefile.rs` reads TOML or JSON from the data folder's `themes` (one file,
   or `<id>/theme.toml` with icons beside it). A file names only what it changes; the rest comes
   from the theme it `inherits` (a built-in's id or another file, the classic look by default),

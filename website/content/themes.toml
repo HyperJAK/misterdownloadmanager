@@ -6,7 +6,7 @@
 [[theme]]
 id = "material"
 name = "Material"
-feel = "Material Design 3 in blue, and what a new installation starts in: round buttons, outlined boxes, flat tabs, soft blue selections."
+feel = "Material Design 3 in blue, the new interface MDM shows by default: round buttons, outlined boxes, flat tabs, soft blue selections."
 shot = "images/help/site-theme-material.webp"
 tag = true
 

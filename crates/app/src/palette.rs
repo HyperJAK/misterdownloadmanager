@@ -10,7 +10,7 @@
 //!
 //! [`CLASSIC`] is MDM's own look (IDM's classic layout, Windows 11 controls, accent #0078D4),
 //! written out with the exact values the painters had before themes, unchanged: what every theme
-//! file starts from. A new installation starts in Material (`assets/themes/material.toml`).
+//! file starts from. MDM shows Material (`assets/themes/material.toml`) unless its switch is off.
 
 use std::borrow::Cow;
 
@@ -701,7 +701,7 @@ pub fn builtins() -> [&'static Theme; 10] {
     static EMERALD: std::sync::LazyLock<Theme> = std::sync::LazyLock::new(|| {
         crate::themefile::builtin("emerald", include_str!("../assets/themes/emerald.toml"))
     });
-    // Material (the look a new installation starts in, `settings.rs`): Material Design 3's
+    // Material (the new interface, `Settings::new_interface`): Material Design 3's
     // shapes and a blue scheme.
     static MATERIAL: std::sync::LazyLock<Theme> = std::sync::LazyLock::new(|| {
         crate::themefile::builtin("material", include_str!("../assets/themes/material.toml"))
