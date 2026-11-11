@@ -614,6 +614,9 @@
 #. text in the Options window
 #. {category} = a category name such as "Music" (keep the braces as they are)
 	Change folder for "{category}" category on last selected	Change folder for "{category}" category on last selected
+#. text in the Options window
+#. a note under the "Use the new interface" checkbox
+	Changes once Mister Download Manager has restarted.	Changes once Mister Download Manager has restarted.
 #. text in the Link grabber window
 #. Link grabber button (IDM's): tick every link
 	Check all	Check all
@@ -1544,6 +1547,8 @@
 #. Check for updates, after Update now downloaded it: unpacking and putting the new version in place
 #. the trailing ... means it is still going on: keep it
 	Installing the update...	Installing the update...
+#. group box title in the Options window
+	Interface	Interface
 #. text in the Options window
 #. Options → Archives: where extracted files go
 	Into a folder named after it, when it holds several things	Into a folder named after it, when it holds several things
@@ -2598,6 +2603,9 @@
 #. text in crashui.rs
 #. crash report window button: start MDM again
 	Restart MDM	Restart MDM
+#. message or event log entry in the main window
+#. title of the question that offers to restart the program
+	Restart Mister Download Manager	Restart Mister Download Manager
 #. button in the Options window; text in the Options window
 	Restore the built-in categories	Restore the built-in categories
 #. text in a download's Properties window
@@ -3267,11 +3275,17 @@
 #. text in errors.rs; text in torrent downloads
 #. an error: the network adapter chosen in Options (a VPN's, usually) is off or gone; {adapter} its name
 	the network adapter {adapter} is not connected	the network adapter {adapter} is not connected
+#. message or event log entry in the main window
+#. question after Options' "Use the new interface" was ticked; Yes restarts the program
+	The new interface shows once Mister Download Manager has restarted. Restart it now? Downloads in progress stop, and can be resumed after.	The new interface shows once Mister Download Manager has restarted. Restart it now? Downloads in progress stop, and can be resumed after.
 #. text in extracting archives (a download's log, the Archive password window)
 #. why an archive wasn't extracted (after "Couldn't extract {name}: ")
 	the password is wrong	the password is wrong
 #. text in errors.rs
 	the path is too long for Windows: {path}	the path is too long for Windows: {path}
+#. message or event log entry in the main window
+#. question after Options' "Use the new interface" was unticked; Yes restarts the program
+	The previous interface shows once Mister Download Manager has restarted. Restart it now? Downloads in progress stop, and can be resumed after.	The previous interface shows once Mister Download Manager has restarted. Restart it now? Downloads in progress stop, and can be resumed after.
 #. text in the Help menu's windows (About, updates, shortcuts, Tell a friend)
 #. why updates could not be checked: the newest release on the site has no number
 	the release has no version	the release has no version
@@ -3698,6 +3712,9 @@
 	Use Speed Limiter	Use Speed Limiter
 #. text in the Options window
 	Use system settings	Use system settings
+#. text in the Options window
+#. checkbox in Options: ticked, the program shows its new look (Material); unticked, the look it had before
+	Use the new interface	Use the new interface
 #. checkbox in the Add torrent window
 #. Torrent settings: use the SOCKS5 proxy set in Options → Proxy / Socks
 	Use the proxy (Options → Proxy / Socks, SOCKS5)	Use the proxy (Options → Proxy / Socks, SOCKS5)
@@ -4657,7 +4674,7 @@ menu	C&ustomize URL List...	C&ustomize URL List...
 #. the trailing ... means it opens a window: keep it
 menu	Check for &updates...	Check for &updates...
 #. menu command in the main window
-#. View → Theme: MDM's own look, the default (IDM's layout, Windows 11's controls)
+#. View → Theme: MDM's first look (IDM's layout, Windows 11's controls)
 menu	Classic	Classic
 #. menu command in the main window
 #. & marks the keyboard shortcut letter: keep one & before a letter of the translation
@@ -4747,6 +4764,9 @@ menu	Its last start ended before its first frame	Its last start ended before its
 #. menu command in the main window
 #. View → Theme: a style theme's name (Windows XP's look), a name: keep "Luna" as written
 menu	Luna	Luna
+#. menu command in the main window
+#. View → Theme: the new interface, shown by default (Material Design 3's look in blue: round buttons, outlined boxes), a name: keep "Material" as written
+menu	Material	Material
 #. menu command in the main window
 #. View → Draw with: a graphics system's name (Apple's), usually kept as is
 menu	Metal	Metal

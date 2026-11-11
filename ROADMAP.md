@@ -234,6 +234,12 @@ Everything below ships together, in version 0.5.0.
   gives a few seeds per variant and derives every other colour, so a role added later arrives
   in this look rather than the classic one
   ([#45](https://github.com/anefzaoui/misterdownloadmanager/issues/45))
+- ✅ Themes: Material, the look a new installation starts in (Material Design 3 in blue: buttons
+  round at their ends, outlined text boxes, flat tabs, tonal selections, round progress bars,
+  a roomier main window with a bar in each running download's row and a navigation pane, light
+  and dark); **Options → Regional → Use the new interface** switches between it and the look
+  before, with a restart MDM offers
+  ([#45](https://github.com/anefzaoui/misterdownloadmanager/issues/45))
 - ✅ Dark mode: grey notes and error texts readable (4.5:1), Options' failed checks no longer dark
   red on the dark dialog ([#45](https://github.com/anefzaoui/misterdownloadmanager/issues/45))
 - ✅ A minimized MDM keeps working: queues, the Scheduler, download limits, the kill switch and

@@ -9,7 +9,8 @@
 //! - [`IconStyle`]: how the toolbar's and Options' outline icons are inked.
 //!
 //! [`CLASSIC`] is MDM's own look (IDM's classic layout, Windows 11 controls, accent #0078D4),
-//! written out with the exact values the painters had before themes: the default, unchanged.
+//! written out with the exact values the painters had before themes, unchanged: what every theme
+//! file starts from. MDM shows Material (`assets/themes/material.toml`) unless its switch is off.
 
 use std::borrow::Cow;
 
@@ -383,6 +384,7 @@ metrics! {
     font_heading: "font.heading", "egui's headings" = 16.0;
     list_row: "list.row", "Height of a row in the download list" = 17.0;
     list_header: "list.header", "Height of the download list's column headers" = 24.0;
+    tree_row: "tree.row", "Height of a row in the categories pane" = 16.0;
     tooltip_width: "tooltip.width", "Where a tooltip's text wraps" = 320.0;
     tooltip_margin_x: "tooltip.margin-x", "A tooltip's left and right padding" = 9.0;
     tooltip_margin_top: "tooltip.margin-top", "A tooltip's top padding" = 6.0;
@@ -435,6 +437,24 @@ pub struct Controls {
     /// A push button: Windows 11's, or KDE's (the edge in the accent under the pointer, the face
     /// tinted with it pressed).
     pub button: ButtonLook,
+    /// A dialog's tabs: Windows' (each tab framed, the chosen one joined to its page), or
+    /// Material's (flat labels, a line in the accent under the chosen one).
+    pub tabs: TabLook,
+    /// The main window's panes: Windows' (a tree with its connectors, a list with its grid), or
+    /// Material's (a navigation pane whose chosen row is a pill, rows without a grid across
+    /// them, a download's share drawn as a bar in its row).
+    pub layout: LayoutLook,
+}
+
+/// How the main window's toolbar, categories and list are drawn. Every part stays where it is.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LayoutLook {
+    /// A tree with dotted connectors, a list with grid lines both ways, square toolbar buttons.
+    Classic,
+    /// A navigation pane (the chosen row a pill in the selection's colour, chevrons, no
+    /// connectors), rows centred in their height with a line under each, a bar under a running
+    /// download's status, round toolbar buttons with the first one filled.
+    Modern,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -443,6 +463,8 @@ pub enum FieldFocus {
     Border,
     /// GNOME: a 2-point ring inside the box, in the accent half seen through.
     Ring,
+    /// Material: the whole border in the accent, 2 points wide (an outlined text field).
+    Outline,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -462,6 +484,9 @@ pub enum CheckLook {
     Aero,
     /// Mac OS X: a glossy box with round corners, filled with the accent's gel when checked.
     Aqua,
+    /// Material: a 2-point border at rest, the accent filled with a light tick when checked;
+    /// a radio keeps its ring, in the accent, around a dot of it.
+    Material,
 }
 
 /// How a push button shows the pointer and a press.
@@ -479,6 +504,19 @@ pub enum ButtonLook {
     Aero,
     /// Mac OS X: a gel face, round at the ends, the default button in the accent's gel.
     Aqua,
+    /// Material: flat and round at the ends; an outlined button, its label in the accent, and
+    /// the default one filled with the accent. No bottom edge.
+    Material,
+}
+
+/// How a dialog's tabs are drawn.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TabLook {
+    /// Windows: each tab in its frame, the chosen one open onto its page.
+    Classic,
+    /// Material: flat labels over the page's top line, the chosen one in the accent with a
+    /// line of it underneath.
+    Underline,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -495,6 +533,8 @@ pub enum ProgressLook {
     Blocks,
     /// Windows 7 and Mac OS X: a glossy fill on a shaded, bordered track.
     Gloss,
+    /// Material: a track round at the ends, no edge, the fill round too with a gap after it.
+    Material,
 }
 
 /// A drawn title bar's look: its buttons and where the title sits.
@@ -540,6 +580,8 @@ impl Controls {
         caption: CaptionLook::System,
         focus: FocusLook::Dotted,
         button: ButtonLook::Fluent,
+        tabs: TabLook::Classic,
+        layout: LayoutLook::Classic,
     };
 
     /// Sets the control with this key to the style named `value`; false when either is unknown.
@@ -548,6 +590,7 @@ impl Controls {
             ("field-focus", "line") => self.field_focus = FieldFocus::Line,
             ("field-focus", "border") => self.field_focus = FieldFocus::Border,
             ("field-focus", "ring") => self.field_focus = FieldFocus::Ring,
+            ("field-focus", "outline") => self.field_focus = FieldFocus::Outline,
             ("check", "fluent") => self.check = CheckLook::Fluent,
             ("check", "square") => self.check = CheckLook::Square,
             ("check", "adwaita") => self.check = CheckLook::Adwaita,
@@ -555,15 +598,18 @@ impl Controls {
             ("check", "luna") => self.check = CheckLook::Luna,
             ("check", "aero") => self.check = CheckLook::Aero,
             ("check", "aqua") => self.check = CheckLook::Aqua,
+            ("check", "material") => self.check = CheckLook::Material,
             ("button", "fluent") => self.button = ButtonLook::Fluent,
             ("button", "breeze") => self.button = ButtonLook::Breeze,
             ("button", "luna") => self.button = ButtonLook::Luna,
             ("button", "aero") => self.button = ButtonLook::Aero,
             ("button", "aqua") => self.button = ButtonLook::Aqua,
+            ("button", "material") => self.button = ButtonLook::Material,
             ("progress", "line") => self.progress = ProgressLook::Line,
             ("progress", "bar") => self.progress = ProgressLook::Bar,
             ("progress", "blocks") => self.progress = ProgressLook::Blocks,
             ("progress", "gloss") => self.progress = ProgressLook::Gloss,
+            ("progress", "material") => self.progress = ProgressLook::Material,
             ("scroll", "overlay") => self.scroll = ScrollLook::Overlay,
             ("scroll", "classic") => self.scroll = ScrollLook::Classic,
             ("caption", "system") => self.caption = CaptionLook::System,
@@ -576,6 +622,10 @@ impl Controls {
             ("focus", "dotted") => self.focus = FocusLook::Dotted,
             ("focus", "ring") => self.focus = FocusLook::Ring,
             ("focus", "frame") => self.focus = FocusLook::Frame,
+            ("tabs", "classic") => self.tabs = TabLook::Classic,
+            ("tabs", "underline") => self.tabs = TabLook::Underline,
+            ("layout", "classic") => self.layout = LayoutLook::Classic,
+            ("layout", "modern") => self.layout = LayoutLook::Modern,
             _ => return false,
         }
         true
@@ -606,7 +656,7 @@ impl Theme {
     }
 }
 
-/// The classic look, MDM's default.
+/// The classic look: MDM's own, and the base every theme file inherits.
 pub static CLASSIC: Theme = Theme {
     id: Cow::Borrowed("classic"),
     name: Cow::Borrowed("Classic"),
@@ -618,11 +668,11 @@ pub static CLASSIC: Theme = Theme {
     controls: Controls::CLASSIC,
 };
 
-/// The built-in themes that don't change by themselves, the default first: the classic look
-/// (written out above), then the ones shipped as theme files (`assets/themes/`, in the format
+/// The built-in themes that don't change by themselves: the classic look (written out above,
+/// what every theme file starts from), then the ones shipped as theme files (`assets/themes/`, in the format
 /// users write, so they double as examples). Native follows the system and is made when chosen
 /// (`crate::native`).
-pub fn builtins() -> [&'static Theme; 9] {
+pub fn builtins() -> [&'static Theme; 10] {
     static HIGH_CONTRAST: std::sync::LazyLock<Theme> = std::sync::LazyLock::new(|| {
         crate::themefile::builtin(
             "high-contrast",
@@ -651,6 +701,11 @@ pub fn builtins() -> [&'static Theme; 9] {
     static EMERALD: std::sync::LazyLock<Theme> = std::sync::LazyLock::new(|| {
         crate::themefile::builtin("emerald", include_str!("../assets/themes/emerald.toml"))
     });
+    // Material (the new interface, `Settings::new_interface`): Material Design 3's
+    // shapes and a blue scheme.
+    static MATERIAL: std::sync::LazyLock<Theme> = std::sync::LazyLock::new(|| {
+        crate::themefile::builtin("material", include_str!("../assets/themes/material.toml"))
+    });
     [
         &CLASSIC,
         &HIGH_CONTRAST,
@@ -661,6 +716,7 @@ pub fn builtins() -> [&'static Theme; 9] {
         &AERO,
         &AQUA,
         &EMERALD,
+        &MATERIAL,
     ]
 }
 
@@ -868,6 +924,11 @@ mod tests {
                 "Emerald",
                 include_str!("../assets/themes/emerald.toml"),
             ),
+            (
+                "material",
+                "Material",
+                include_str!("../assets/themes/material.toml"),
+            ),
         ] {
             let v: serde_json::Value = toml::from_str(text).unwrap();
             let l = crate::themefile::parse(id, &v, |_| {
@@ -944,6 +1005,29 @@ mod tests {
         assert_eq!(builtins()[6].controls.focus, FocusLook::Dotted);
         // Emerald: flat 6-point corners, ring focus, and its chips inked rather than lettered
         // in white — the soft fill carries the near-black text in both variants.
+        // Material: buttons round at their ends, outlined boxes, flat tabs; the filled button's
+        // and a selection's texts read on their fills, light and dark.
+        let material = builtins()[9];
+        assert_eq!(material.id, "material");
+        assert_eq!(material.icon_set.as_deref(), Some("metro"));
+        assert_eq!(material.controls.button, ButtonLook::Material);
+        assert_eq!(material.controls.check, CheckLook::Material);
+        assert_eq!(material.controls.progress, ProgressLook::Material);
+        assert_eq!(material.controls.field_focus, FieldFocus::Outline);
+        assert_eq!(material.controls.tabs, TabLook::Underline);
+        assert_eq!(material.controls.layout, LayoutLook::Modern);
+        assert!(material.metrics.list_row >= 36.0 && material.metrics.tree_row >= 28.0);
+        assert_eq!(material.controls.focus, FocusLook::Ring);
+        assert_eq!(material.controls.caption, CaptionLook::System);
+        for p in [&material.light, &material.dark] {
+            assert!(crate::derive::contrast(p.button_text, p.button_hot) >= 4.5);
+            assert!(crate::derive::contrast(p.button_accent_text, p.button_accent_pressed) >= 4.5);
+            assert!(crate::derive::contrast(p.selection_muted, p.selection) >= 4.5);
+            assert!(crate::derive::contrast(p.chip_text, p.chip_web) >= 4.5);
+            assert!(crate::derive::contrast(p.chip_text, p.chip_torrent) >= 4.5);
+            assert!(crate::derive::contrast(p.field_border, p.field) >= 3.0);
+            assert!(crate::derive::contrast(p.check_border, p.window) >= 3.0);
+        }
         let emerald = builtins()[8];
         assert_eq!(emerald.metrics.control_radius, 6.0);
         assert_eq!(emerald.controls.field_focus, FieldFocus::Ring);

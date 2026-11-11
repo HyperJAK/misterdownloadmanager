@@ -185,7 +185,14 @@ MDM follows your system: when Windows (or your desktop's light/dark preference o
 
 **View → Theme** changes MDM's look at once, keeping its layout:
 
-- **Classic**: MDM's own look, the default.
+- **Material**: the new interface, shown unless you turn it off, after Material Design 3, in blue: buttons
+  round at their ends (the default one filled blue, the others outlined), outlined text boxes whose
+  whole edge turns blue with the focus, flat tabs with a blue line under the chosen one, a selection
+  in a soft blue, round progress bars, and Metro's one-colour icons. Its main window is roomier:
+  taller rows with a bar under the status of a download still coming in, the categories as a
+  navigation pane whose chosen row is a blue pill, and **Add URL** on a blue fill. **Options → Regional → Use the
+  new interface**, unticked, brings back the look before it; MDM offers to restart, which shows it.
+- **Classic**: MDM's first look: the layout IDM users know, with Windows 11's controls.
 - **Native**: your system's colours. Windows' accent colour (Settings → Personalization →
   Colors) and, when it is on, its contrast theme; the desktop's accent colour and its higher
   contrast setting on Linux (GNOME 47 and later, KDE Plasma); the accent colour on macOS. It
@@ -214,7 +221,7 @@ MDM follows your system: when Windows (or your desktop's light/dark preference o
   neutral greys for structure, emerald fills that always carry near-black text rather than white,
   6-point corners on every control, and Metro's one-colour icons.
 
-![View → Theme open: Classic, Native, High contrast, Metro, Adwaita, Breeze, Luna, Aero, Aqua and Emerald, and Open themes folder](images/help/view-theme.webp)
+![View → Theme open: Material, Classic, Native, High contrast, Metro, Adwaita, Breeze, Luna, Aero, Aqua and Emerald, and Open themes folder](images/help/view-theme.webp)
 *View → Theme switches at once, keeping the layout.*
 
 <!-- pictures -->

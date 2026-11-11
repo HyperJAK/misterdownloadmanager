@@ -2404,6 +2404,26 @@ impl OptionsDialog {
             crate::i18n::t("Used by the list of downloads and the Scheduler."),
             LIGHT_DISABLED(),
         );
+        // The interface (the General page has no row left): the new look and main window, or
+        // the one before it. OK offers to restart MDM, which shows it.
+        group(ui, o, 16.0, 356.0, 392.0, 64.0, "Interface");
+        winui::checkbox_light(
+            ui,
+            o + vec2(30.0, 376.0),
+            &mut self.s.new_interface,
+            // i18n: checkbox in Options: ticked, the program shows its new look (Material); unticked, the look it had before
+            crate::i18n::mark("Use the new interface"),
+            true,
+        );
+        winui::text_in_window(
+            ui,
+            &p,
+            o.x + 46.0,
+            o.y + 404.0,
+            // i18n: a note under the "Use the new interface" checkbox
+            crate::i18n::t("Changes once Mister Download Manager has restarted."),
+            LIGHT_DISABLED(),
+        );
     }
 
     fn sounds(&mut self, ui: &mut Ui, o: Pos2) {
@@ -4249,48 +4269,52 @@ fn tabs(ui: &mut Ui, o: Pos2, page: usize) -> Option<usize> {
                 }
             }
         }
-        let face = if sel {
-            LIGHT_PAGE()
-        } else if resp.hovered() {
-            winui::TAB_HOT()
-        } else {
-            winui::TAB_UNSELECTED()
-        };
-        fill(&p, o.x + x0, o.y + top, o.x + x1, o.y + bottom, face);
-        fill(
-            &p,
-            o.x + x0 + 1.0,
-            o.y + top,
-            o.x + x1 - 1.0,
-            o.y + top,
-            border,
-        );
-        fill(
-            &p,
-            o.x + x0,
-            o.y + top + 1.0,
-            o.x + x0,
-            o.y + bottom,
-            border,
-        );
-        fill(
-            &p,
-            o.x + x1,
-            o.y + top + 1.0,
-            o.x + x1,
-            o.y + bottom,
-            border,
-        );
+        // Material's flat tabs (a line under the chosen one), or Windows' framed ones.
+        let ink = winui::flat_tab(&p, rc, sel, resp.hovered() && !sel).unwrap_or_else(|| {
+            let face = if sel {
+                LIGHT_PAGE()
+            } else if resp.hovered() {
+                winui::TAB_HOT()
+            } else {
+                winui::TAB_UNSELECTED()
+            };
+            fill(&p, o.x + x0, o.y + top, o.x + x1, o.y + bottom, face);
+            fill(
+                &p,
+                o.x + x0 + 1.0,
+                o.y + top,
+                o.x + x1 - 1.0,
+                o.y + top,
+                border,
+            );
+            fill(
+                &p,
+                o.x + x0,
+                o.y + top + 1.0,
+                o.x + x0,
+                o.y + bottom,
+                border,
+            );
+            fill(
+                &p,
+                o.x + x1,
+                o.y + top + 1.0,
+                o.x + x1,
+                o.y + bottom,
+                border,
+            );
+            LIGHT_TEXT()
+        });
         // A translated row too wide for the strip has narrower tabs (`tab_row`): their labels are
         // cut with "..." and shown whole on hover.
         let full = crate::i18n::t(label);
         let shown = winui::ellipsize(&p, &winui::tahoma(), full, x1 - x0 - 6.0);
         if shown == full {
-            text(&p, o.x + lx, o.y + base, full, LIGHT_TEXT());
+            text(&p, o.x + lx, o.y + base, full, ink);
         } else {
             let w = winui::text_width(&p, &shown);
             let lx = x0 + ((x1 - x0 - w) / 2.0).floor();
-            let rc = text(&p, o.x + lx, o.y + base, &shown, LIGHT_TEXT());
+            let rc = text(&p, o.x + lx, o.y + base, &shown, ink);
             winui::full_on_hover(ui, rc, ("opt-tab-label", i), full);
         }
         winui::show_focus(ui, &resp, rc.shrink(2.0));
@@ -4321,18 +4345,27 @@ fn tabs(ui: &mut Ui, o: Pos2, page: usize) -> Option<usize> {
         o.y + 468.0,
         border,
     );
-    let shadow = winui::TAB_UNSELECTED();
-    fill(
-        &p,
-        o.x + 422.0,
-        o.y + 45.0,
-        o.x + 423.0,
-        o.y + 469.0,
-        shadow,
-    );
-    fill(&p, o.x + 6.0, o.y + 469.0, o.x + 423.0, o.y + 469.0, shadow);
+    // Flat tabs (Material): the page casts no shadow, and the chosen tab keeps the others'
+    // place.
+    let flat = crate::theme::current().controls.tabs == crate::palette::TabLook::Underline;
+    if !flat {
+        let shadow = winui::TAB_UNSELECTED();
+        fill(
+            &p,
+            o.x + 422.0,
+            o.y + 45.0,
+            o.x + 423.0,
+            o.y + 469.0,
+            shadow,
+        );
+        fill(&p, o.x + 6.0, o.y + 469.0, o.x + 423.0, o.y + 469.0, shadow);
+    }
     if let Some(t) = front.iter().find(|t| t.0 == page) {
-        tab(ui, *t, 25.0, 38.0, true);
+        if flat {
+            tab(ui, *t, 27.0, 40.0, true);
+        } else {
+            tab(ui, *t, 25.0, 38.0, true);
+        }
     }
     clicked
 }

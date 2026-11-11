@@ -1,0 +1,235 @@
+# Material: the new interface of Mister Download Manager, shown by default, after Material
+# Design 3 (its shapes and colour roles, written here from the public guidelines; nothing of
+# Google's but that). A blue scheme: one primary blue for what acts or is chosen, tinted
+# neutral surfaces a step apart, no shadows and no gloss.
+#
+# It is also an example of a theme file. The seeds derive every colour (`crate::derive`), so a
+# role MDM adds later arrives in this look; the roles below are the ones Material sets apart:
+# outlined buttons round at their ends (the default one filled), outlined text boxes, tonal
+# selections, flat tabs. The icons are Metro's: one-colour line art.
+
+name = "Material"
+icons = "mono"
+icon-set = "metro"
+
+[controls]
+field-focus = "outline"
+check = "material"
+button = "material"
+progress = "material"
+tabs = "underline"
+layout = "modern"
+scroll = "overlay"
+caption = "system"
+focus = "ring"
+
+[sizes]
+# Material's shape scale: extra small (4) for boxes and menus' items, medium (12) for what
+# floats. Buttons are round at their ends whatever these say.
+radius = 4
+"radius.button" = 4
+"radius.part" = 4
+"radius.check" = 2
+"radius.flyout" = 12
+"radius.menu-item" = 4
+"radius.egui" = 4
+"radius.popup" = 4
+border = 1
+"focus-line" = 2
+# Roomy rows: a download's line holds its status and, under it, its bar.
+"list.row" = 40
+"list.header" = 34
+"tree.row" = 30
+
+# The names in the comments are Material's colour roles.
+[seeds.light]
+background = "#f0f4f9"   # surface container
+surface = "#ffffff"      # surface container lowest
+header = "#f0f4f9"       # surface container
+text = "#1f1f1f"         # on surface
+accent = "#0b57d0"       # primary
+selection = "#d3e3fd"    # primary container
+error = "#b3261e"
+warning = "#8f4e00"
+success = "#146c2e"
+
+[seeds.dark]
+background = "#1e1f20"   # surface container
+surface = "#131314"      # surface
+header = "#282a2c"       # surface container high
+text = "#e3e3e3"         # on surface
+accent = "#a8c7fa"       # primary
+selection = "#0842a0"    # primary container
+error = "#f2b8b5"
+warning = "#ffb95c"
+success = "#6dd58c"
+
+[light]
+"text.muted" = "#444746"               # on surface variant
+# Outlined buttons: the surface, an outline, the label in the primary; under the pointer and
+# pressed, the primary laid over at 8 and 12 in 100 (Material's state layers).
+button = "#ffffff"
+"button.hot" = "#ebf1fb"
+"button.pressed" = "#e1eaf9"
+"button.border" = "#747775"            # outline
+"button.bottom" = "#747775"
+"button.text" = "#0b57d0"
+"button.text.pressed" = "#0b57d0"
+"button.default.border" = "#0b57d0"
+"button.default.bottom" = "#0b57d0"
+"button.disabled" = "#f1f3f6"
+"button.disabled.border" = "#dfe2e6"
+# Filled buttons: the primary, white on it; the label's white laid over the same way.
+"button.accent" = "#0b57d0"
+"button.accent.hot" = "#1f64d4"
+"button.accent.pressed" = "#286bd6"
+"button.accent.bottom" = "#0b57d0"
+"button.accent.text" = "#ffffff"
+"button.accent.text.pressed" = "#ffffff"
+# Outlined text boxes: the outline all round, no stronger line along the bottom.
+"field.border" = "#747775"
+"field.bottom" = "#747775"
+# Check boxes and radios: a 2-point edge at rest, the primary when chosen.
+check = "#ffffff"
+"check.hot" = "#ebf1fb"
+"check.pressed" = "#e1eaf9"
+"check.border" = "#444746"
+"check.border.hot" = "#1f1f1f"
+"check.border.pressed" = "#0b57d0"
+"check.on" = "#0b57d0"
+"check.on.hot" = "#1f64d4"
+"check.on.pressed" = "#286bd6"
+"check.mark" = "#ffffff"
+# Progress: the primary on its container.
+"progress.track" = "#d3e3fd"
+"progress.bar" = "#0b57d0"
+"meter.track" = "#d3e3fd"
+"meter.edge" = "#d3e3fd"
+"meter.fill" = "#0b57d0"
+# A selection is tonal: the primary container, its own dark blue on it.
+"selection.text" = "#041e49"           # on primary container
+"selection.muted" = "#284777"
+"selection.inactive" = "#e1e5ea"
+"selection.focus" = "#0b57d0"
+# The keyboard focus: Material draws it in the secondary colour.
+"focus.ring" = "#00639b"
+# Dialogs: flat tabs on the window, the page a step lighter, hairlines in the outline variant.
+tab = "#f0f4f9"
+"tab.hot" = "#e2e9f4"
+"tab.page" = "#ffffff"
+"header.line" = "#c4c7c5"              # outline variant
+"group.line" = "#c4c7c5"
+"etch.shadow" = "#c4c7c5"
+"etch.light" = "#f0f4f9"
+# The main window: the list and the navigation pane are white sheets on the window, without a
+# frame; the list's headers are part of its sheet, a hairline under them and under each row.
+"list.frame" = "#ffffff"
+"tree.frame" = "#ffffff"
+"tree.lines" = "#dadce0"
+header = "#ffffff"
+"header.sep" = "#ffffff"
+"header.sorted" = "#f0f4f9"
+"list.grid" = "#e9edf2"
+"subtle.hot" = "#e9eef6"
+"subtle.pressed" = "#dde3ea"
+# Menus: a surface container with no edge of its own, the items tinted under the pointer.
+menu = "#f0f4f9"
+"menu.item" = "#f0f4f9"
+"menu.hot" = "#dfe3e8"
+"menu.border" = "#dfe3e8"
+"menu.sep" = "#c4c7c5"
+"menubar.hot" = "#e2e6eb"
+"menubar.open" = "#d3e3fd"
+"menubar.line" = "#f0f4f9"
+# The toolbar: the primary's state layer under a button, no frame round it.
+"toolbar.line" = "#f0f4f9"
+"toolbar.line.light" = "#f0f4f9"
+"toolbar.hot" = "#dde6f5"
+"toolbar.hot.faint" = "#e7edf7"
+"toolbar.pressed" = "#c9d9f4"
+"toolbar.hot.edge" = "#c4c7c5"
+"toolbar.hot.border" = "#00000000"
+"highlight.hot" = "#e5edfa"
+"highlight.pressed" = "#d3e3fd"
+# Kind chips: a tonal fill with the text's ink on it.
+"chip.web" = "#c4eed0"
+"chip.torrent" = "#e9ddff"
+"chip.text" = "#1f1f1f"
+
+[dark]
+"text.muted" = "#c4c7c5"
+button = "#1e1f20"
+"button.hot" = "#292c31"
+"button.pressed" = "#2f3338"
+"button.border" = "#8e918f"
+"button.bottom" = "#8e918f"
+"button.text" = "#a8c7fa"
+"button.text.pressed" = "#a8c7fa"
+"button.default.border" = "#a8c7fa"
+"button.default.bottom" = "#a8c7fa"
+"button.disabled" = "#232425"
+"button.disabled.border" = "#333537"
+"button.accent" = "#a8c7fa"
+"button.accent.hot" = "#9bbbef"
+"button.accent.pressed" = "#94b5ea"
+"button.accent.bottom" = "#a8c7fa"
+"button.accent.text" = "#062e6f"       # on primary
+"button.accent.text.pressed" = "#062e6f"
+"field.border" = "#8e918f"
+"field.bottom" = "#8e918f"
+check = "#131314"
+"check.hot" = "#1f2329"
+"check.pressed" = "#252a31"
+"check.border" = "#c4c7c5"
+"check.border.hot" = "#e3e3e3"
+"check.border.pressed" = "#a8c7fa"
+"check.on" = "#a8c7fa"
+"check.on.hot" = "#9bbbef"
+"check.on.pressed" = "#94b5ea"
+"check.mark" = "#062e6f"
+"progress.track" = "#0842a0"
+"progress.bar" = "#a8c7fa"
+"meter.track" = "#0842a0"
+"meter.edge" = "#0842a0"
+"meter.fill" = "#a8c7fa"
+"selection.text" = "#d3e3fd"
+"selection.muted" = "#a8c7fa"
+"selection.inactive" = "#333537"
+"selection.focus" = "#a8c7fa"
+"focus.ring" = "#7fcfff"
+tab = "#1e1f20"
+"tab.hot" = "#292c31"
+"tab.page" = "#131314"
+"header.line" = "#444746"
+"group.line" = "#444746"
+"list.frame" = "#131314"
+"tree.frame" = "#131314"
+"tree.lines" = "#3a3c3e"
+header = "#131314"
+"header.sep" = "#131314"
+"header.sorted" = "#1e1f20"
+"list.grid" = "#242628"
+"subtle.hot" = "#232528"
+"subtle.pressed" = "#2c2f33"
+"etch.shadow" = "#444746"
+"etch.light" = "#1e1f20"
+menu = "#282a2c"
+"menu.item" = "#282a2c"
+"menu.hot" = "#37393b"
+"menu.border" = "#37393b"
+"menu.sep" = "#444746"
+"menubar.hot" = "#37393b"
+"menubar.open" = "#0842a0"
+"menubar.line" = "#282a2c"
+"toolbar.line" = "#282a2c"
+"toolbar.line.light" = "#1e1f20"
+"toolbar.hot" = "#292c31"
+"toolbar.hot.faint" = "#232528"
+"toolbar.pressed" = "#2f3338"
+"toolbar.hot.edge" = "#444746"
+"toolbar.hot.border" = "#00000000"
+"highlight.hot" = "#292c31"
+"highlight.pressed" = "#0842a0"
+"chip.web" = "#0f5223"
+"chip.torrent" = "#4f378a"
+"chip.text" = "#e3e3e3"

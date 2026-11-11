@@ -88,9 +88,11 @@ light and a dark palette, metrics, control styles and an icon style (`palette.rs
   the system's accent and contrast (Windows' settings, the freedesktop portal on Linux, macOS's
   accent).
 - **Control styles.** `palette::Controls` names each control's shape (text boxes, check boxes,
-  buttons, progress bars, scroll bars, the focus mark, the title bar); the style themes (Metro,
-  Adwaita, Breeze, Luna, Aero, Aqua, Emerald) pick theirs, and on Windows MDM then draws the
-  title bar itself (the `caption.*` roles).
+  buttons, progress bars, scroll bars, tabs, the focus mark, the title bar, the main window's panes); the style themes
+  (Material, Metro, Adwaita, Breeze, Luna, Aero, Aqua, Emerald) pick theirs, and where one asks
+  for its own title bar, on Windows MDM draws it itself (the `caption.*` roles). MDM is
+  drawn in Material while `Settings::new_interface` is on (Options' switch, on by default, applied
+  with a restart MDM offers), else in the chosen theme.
 - **Theme files.** `themefile.rs` reads TOML or JSON from the data folder's `themes` (one file,
   or `<id>/theme.toml` with icons beside it). A file names only what it changes; the rest comes
   from the theme it `inherits` (a built-in's id or another file, the classic look by default),
@@ -100,7 +102,8 @@ light and a dark palette, metrics, control styles and an icon style (`palette.rs
   `cat-music`…, SVG or PNG at 16, 24, 32 and 48 px, `-symbolic` ones inked in the text colour)
   where the classic look draws its own; a need the set lacks keeps the classic icon.
 
-Where a window puts its controls stays its layout. So do the icons
+Where a window puts its controls stays its layout (`layout = "modern"` draws the main window's
+rows, navigation pane and toolbar buttons roomier, in the same places). So do the icons
 before file names (`fileicons.rs`): the Windows shell's system image lists, macOS Finder's
 (NSWorkspace), the Linux desktop's icon theme (`xdgicons.rs`, shared-mime-info and the Icon
 Theme Specification). Each type is looked up once per pixel size, on a background thread. Tango's

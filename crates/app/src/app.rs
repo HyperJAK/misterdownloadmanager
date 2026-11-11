@@ -646,6 +646,8 @@ pub struct App {
     confirm_delete: Option<dialogs::ConfirmDelete>,
     /// Queue right-click → Delete, asking first: the queue and the question.
     confirm_queue_delete: Option<(usize, dialogs::Confirm)>,
+    /// Options' "Use the new interface" was changed: restart now, to show it?
+    confirm_restart: Option<dialogs::Confirm>,
     /// Redownload, asking first: the download and the question.
     confirm_redownload: Option<(u64, dialogs::Confirm)>,
     /// A duplicate address asking what to do: the download already there, what was being added.
@@ -970,7 +972,7 @@ impl App {
         start: crate::Start,
     ) -> Self {
         // The look (#45): the chosen theme before anything is drawn.
-        crate::theme::select(&crate::theme::startup_id(&loaded.settings.theme), ctx);
+        crate::theme::select(&crate::theme::startup_id(loaded.settings.look()), ctx);
         crate::theme::apply(ctx);
         // The zoom main.rs started at (View → Interface size, #262).
         let zoom = crate::scale::startup(loaded.settings.interface_size);
@@ -1194,6 +1196,7 @@ impl App {
             headless: false,
             confirm_delete: None,
             confirm_queue_delete: None,
+            confirm_restart: None,
             confirm_redownload: None,
             duplicate: None,
             duplicates_waiting: Default::default(),
@@ -1415,6 +1418,11 @@ impl App {
             },
             icon: file_icon(&it.file_name),
             queued: queued.contains(&it.id),
+            // A finished or failed download has no share left to show.
+            fraction: match it.status {
+                Status::Complete | Status::Error => None,
+                _ => it.fraction().map(|f| f as f32),
+            },
             cells: [
                 it.file_name.clone(),
                 String::new(),
@@ -2012,6 +2020,29 @@ impl App {
             self.torrent_host
                 .stop_if_idle(&self.rt, true, self.settings.torrent_stop_idle);
         }
+    }
+
+    /// Close MDM and start it again (Options' "Use the new interface"): the new copy waits for
+    /// this one to be gone, as after an update, and this one saves as it closes.
+    fn restart(&mut self, ctx: &egui::Context) {
+        // The AppImage file itself on Linux (this program sits in its temporary mount).
+        #[cfg(windows)]
+        let program = std::env::current_exe().ok();
+        #[cfg(unix)]
+        let program = crate::unix::program();
+        let started = program.and_then(|exe| {
+            std::process::Command::new(exe)
+                .arg(crate::update::UPDATED)
+                // An override would keep the look the switch just changed.
+                .env_remove("MDM_THEME")
+                .spawn()
+                .ok()
+        });
+        if started.is_none() {
+            tracing::error!("MDM couldn't start again; the interface changes at the next start");
+            return;
+        }
+        self.run(Cmd::Exit, None, ctx);
     }
 
     /// `/show <window>` (mdm_ipc::Command::show): open one of the windows by name, as its menu
@@ -5259,7 +5290,11 @@ impl App {
                 self.dirty = true;
             }
             Cmd::Theme(id) => {
-                self.settings.theme = id.to_owned();
+                // Material is the new interface (Options' switch); any other look turns it off.
+                self.settings.new_interface = id == "material";
+                if id != "material" {
+                    self.settings.theme = id.to_owned();
+                }
                 crate::theme::select(id, ctx);
                 // Live: egui's own visuals, the glyph rendering and the captions follow at once;
                 // every painter reads the new theme from its next frame.
@@ -5974,11 +6009,20 @@ impl App {
     /// to that folder. Picked, a theme applies at once.
     fn theme_menu(&self) -> MenuEntry<Cmd> {
         use MenuEntry::{Item as I, Radio, Sep, Sub};
-        let chosen = self.settings.theme.as_str();
+        // The look drawn now: Options' switch waits for a restart, the menu shows what is on.
+        let drawn = crate::theme::current().id.to_string();
+        let chosen = drawn.as_str();
         let mut items = Vec::new();
         let mut files = false;
         let on = |id: &str| chosen == id;
-        // i18n: View → Theme: MDM's own look, the default (IDM's layout, Windows 11's controls)
+        // i18n: View → Theme: the new interface, shown by default (Material Design 3's look in blue: round buttons, outlined boxes), a name: keep "Material" as written
+        items.push(Radio(
+            "Material",
+            Cmd::Theme("material"),
+            true,
+            on("material"),
+        ));
+        // i18n: View → Theme: MDM's first look (IDM's layout, Windows 11's controls)
         items.push(Radio("Classic", Cmd::Theme("classic"), true, on("classic")));
         // i18n: View → Theme: the system's own colours (its accent colour, its high contrast)
         items.push(Radio("Native", Cmd::Theme("native"), true, on("native")));
@@ -8234,6 +8278,17 @@ impl App {
                 }
             }
         }
+        if let Some(d) = &mut self.confirm_restart {
+            match d.show(ctx) {
+                Outcome::Open => {}
+                // No: the setting is saved, and applies at the next start.
+                Outcome::Closed => self.confirm_restart = None,
+                Outcome::Done(()) => {
+                    self.confirm_restart = None;
+                    self.restart(ctx);
+                }
+            }
+        }
         if let Some((q, d)) = &mut self.confirm_queue_delete {
             match d.show(ctx) {
                 Outcome::Open => {}
@@ -8642,7 +8697,30 @@ impl App {
                 Outcome::Done(new) => {
                     let new = Settings::merge_changes(&self.settings, &d.from, &new);
                     self.options = None;
+                    let interface = new.new_interface;
+                    let switched = interface != self.settings.new_interface;
                     self.apply_options(new);
+                    // The interface changes with a restart: offered now, or it waits for the
+                    // next start.
+                    if switched && self.settings.new_interface == interface {
+                        self.dirty = true;
+                        let text = if interface {
+                            // i18n: question after Options' "Use the new interface" was ticked; Yes restarts the program
+                            crate::i18n::t(
+                                "The new interface shows once Mister Download Manager has restarted. Restart it now? Downloads in progress stop, and can be resumed after.",
+                            )
+                        } else {
+                            // i18n: question after Options' "Use the new interface" was unticked; Yes restarts the program
+                            crate::i18n::t(
+                                "The previous interface shows once Mister Download Manager has restarted. Restart it now? Downloads in progress stop, and can be resumed after.",
+                            )
+                        };
+                        self.confirm_restart = Some(dialogs::Confirm::new(
+                            // i18n: title of the question that offers to restart the program
+                            crate::i18n::mark("Restart Mister Download Manager"),
+                            text.to_owned(),
+                        ));
+                    }
                 }
             }
         }

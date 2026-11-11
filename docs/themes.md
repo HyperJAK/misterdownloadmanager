@@ -12,10 +12,11 @@ Open **View → Theme** and click a theme: the whole window changes at once, not
 **View → Dark Mode support** and **View → Always dark** then choose its light or dark side, as
 for the classic look ([Dark mode](getting-started.md#dark-mode)).
 
-The built-in themes are **Classic** (MDM's own look, the default), **Native** (your system's
-accent colour and contrast), **High contrast**, and the style themes **Metro**, **Adwaita**,
-**Breeze**, **Luna**, **Aero**, **Aqua** and **Emerald**, each with its own control shapes and
-icons, and on Windows its own title bar. [Getting started](getting-started.md#themes) describes
+The built-in themes are **Material** (Material Design 3's look in blue, the new interface MDM
+starts in), **Classic** (MDM's first look), **Native** (your system's accent colour and
+contrast), **High contrast**, and the style themes **Metro**, **Adwaita**, **Breeze**, **Luna**,
+**Aero**, **Aqua** and **Emerald**, each with its own control shapes and icons, and on Windows
+its own title bar. [Getting started](getting-started.md#themes) describes
 each one; the website's [Themes page](https://misterdownloadmanager.com/themes.html) shows them
 all, light and dark.
 
@@ -128,7 +129,8 @@ focus = "ring"
 
 - **`name`** — what **View → Theme** lists; the file's name when there is none.
 - **`inherits`** — the theme yours starts from: `classic` (the default when it's left out), a
-  built-in theme's id (`metro`, `adwaita`, `breeze`, `luna`, `aero`, `aqua`, `high-contrast`), or
+  built-in theme's id (`material`, `metro`, `adwaita`, `breeze`, `luna`, `aero`, `aqua`,
+  `high-contrast`), or
   another theme file in the same folder, by its file name without `.toml`. A file that inherits
   another can be inherited in turn; a theme can't inherit itself.
 - **`[seeds]`** — a handful of colours (`background`, `surface`, `header`, `text`, `accent`,
@@ -139,7 +141,7 @@ focus = "ring"
   with transparency. The roles a file sets win over its seeds.
 - **`[sizes]`** — corner radii, border widths, font sizes and row heights, in pixels.
 - **`[controls]`** — the shape of text boxes, check boxes, buttons, progress bars, scroll bars,
-  the focus mark and the title bar.
+  tabs, the focus mark, the title bar and the main window's panes (`layout`).
 - **`icons`** — `color`, `mono` (one colour) or `accent`.
 - **`contrast = "high"`** — strengthens every edge and text colour on top of the rest.
 
