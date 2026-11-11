@@ -1415,6 +1415,11 @@ impl App {
             },
             icon: file_icon(&it.file_name),
             queued: queued.contains(&it.id),
+            // A finished or failed download has no share left to show.
+            fraction: match it.status {
+                Status::Complete | Status::Error => None,
+                _ => it.fraction().map(|f| f as f32),
+            },
             cells: [
                 it.file_name.clone(),
                 String::new(),
@@ -5978,7 +5983,14 @@ impl App {
         let mut items = Vec::new();
         let mut files = false;
         let on = |id: &str| chosen == id;
-        // i18n: View → Theme: MDM's own look, the default (IDM's layout, Windows 11's controls)
+        // i18n: View → Theme: the look a new installation starts in (Material Design 3's look in blue: round buttons, outlined boxes), a name: keep "Material" as written
+        items.push(Radio(
+            "Material",
+            Cmd::Theme("material"),
+            true,
+            on("material"),
+        ));
+        // i18n: View → Theme: MDM's first look (IDM's layout, Windows 11's controls)
         items.push(Radio("Classic", Cmd::Theme("classic"), true, on("classic")));
         // i18n: View → Theme: the system's own colours (its accent colour, its high contrast)
         items.push(Radio("Native", Cmd::Theme("native"), true, on("native")));

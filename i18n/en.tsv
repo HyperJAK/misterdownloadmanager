@@ -4657,7 +4657,7 @@ menu	C&ustomize URL List...	C&ustomize URL List...
 #. the trailing ... means it opens a window: keep it
 menu	Check for &updates...	Check for &updates...
 #. menu command in the main window
-#. View → Theme: MDM's own look, the default (IDM's layout, Windows 11's controls)
+#. View → Theme: MDM's first look (IDM's layout, Windows 11's controls)
 menu	Classic	Classic
 #. menu command in the main window
 #. & marks the keyboard shortcut letter: keep one & before a letter of the translation
@@ -4747,6 +4747,9 @@ menu	Its last start ended before its first frame	Its last start ended before its
 #. menu command in the main window
 #. View → Theme: a style theme's name (Windows XP's look), a name: keep "Luna" as written
 menu	Luna	Luna
+#. menu command in the main window
+#. View → Theme: the look a new installation starts in (Material Design 3's look in blue: round buttons, outlined boxes), a name: keep "Material" as written
+menu	Material	Material
 #. menu command in the main window
 #. View → Draw with: a graphics system's name (Apple's), usually kept as is
 menu	Metal	Metal

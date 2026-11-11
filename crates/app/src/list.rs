@@ -329,6 +329,9 @@ pub struct Row {
     pub icon: IconKey,
     /// In a queue: the Q column shows a queue icon (IDM: stacked files).
     pub queued: bool,
+    /// How much of an unfinished download is here, 0 to 1, when its size is known: the bar in
+    /// its row where the theme draws one (`palette::LayoutLook::Modern`).
+    pub fraction: Option<f32>,
     pub cells: [String; COLS],
 }
 
@@ -874,6 +877,14 @@ pub fn show(
         }
     };
     expose_out_of_view(reach.start..reach.end.min(first));
+    // Material's rows (`palette::LayoutLook::Modern`): taller than their text, which is centred
+    // in them (`vy` lower); the selection a round-cornered fill, no grid across the columns.
+    let modern = crate::theme::current().controls.layout == crate::palette::LayoutLook::Modern;
+    let vy = if modern {
+        ((row_h() - 17.0) / 2.0).floor().max(0.0)
+    } else {
+        0.0
+    };
     for k in 0..visible {
         let idx = first + k;
         let top = body_top + k as f32 * row_h() - offset;
@@ -888,35 +899,65 @@ pub fn show(
                 // The row above its grid line; the focused row has a dotted outline (every other
                 // pixel), in the fill's inverse on a selected row. Both modes alike.
                 let (right, bottom) = (last_right - 1.0, top + row_h() - 2.0);
-                if sel {
-                    fill(&bp, cl, top, right, bottom, SELECTED());
-                }
-                if has_focus {
-                    let dot = if sel {
-                        crate::theme::colors().selection_focus
-                    } else {
-                        TEXT()
-                    };
-                    dotted(&bp, cl, top, right, bottom, dot);
+                let dot = if sel {
+                    crate::theme::colors().selection_focus
+                } else {
+                    TEXT()
+                };
+                if modern {
+                    let rc = screen(Rect::from_min_max(
+                        pos2(cl + 3.0, top + 2.0),
+                        pos2(right - 2.0, bottom - 1.0),
+                    ));
+                    if sel {
+                        bp.rect_filled(rc, 8.0, SELECTED());
+                    }
+                    if has_focus {
+                        bp.rect_stroke(
+                            rc,
+                            8.0,
+                            egui::Stroke::new(2.0, dot),
+                            egui::StrokeKind::Inside,
+                        );
+                    }
+                } else {
+                    if sel {
+                        fill(&bp, cl, top, right, bottom, SELECTED());
+                    }
+                    if has_focus {
+                        dotted(&bp, cl, top, right, bottom, dot);
+                    }
                 }
             } else if picked {
                 // Unfocused (Find, Properties, a menu has the keys): still shown, in the inactive
                 // selection grey, as Explorer shows it, so what a command acts on stays visible.
                 let bottom = top + row_h() - 2.0;
-                fill(
-                    &bp,
-                    cl,
-                    top,
-                    last_right - 1.0,
-                    bottom,
-                    winui::SELECTED_INACTIVE(),
-                );
+                if modern {
+                    bp.rect_filled(
+                        screen(Rect::from_min_max(
+                            pos2(cl + 3.0, top + 2.0),
+                            pos2(last_right - 3.0, bottom - 1.0),
+                        )),
+                        8.0,
+                        winui::SELECTED_INACTIVE(),
+                    );
+                } else {
+                    fill(
+                        &bp,
+                        cl,
+                        top,
+                        last_right - 1.0,
+                        bottom,
+                        winui::SELECTED_INACTIVE(),
+                    );
+                }
             }
             for (c, x0, x1) in &cols {
                 // The file-type icon sits in the File Name column, wherever it is.
                 let tx = if *c == 0 {
-                    icons.paint_in(ui, &bp, row.icon.clone(), pos2(x0 + 4.0, top));
-                    x0 + 22.0
+                    let lead = if modern { 10.0 } else { 4.0 };
+                    icons.paint_in(ui, &bp, row.icon.clone(), pos2(x0 + lead, top + vy));
+                    x0 + lead + 18.0 + if modern { 4.0 } else { 0.0 }
                 } else {
                     x0 + 6.0
                 };
@@ -925,7 +966,7 @@ pub fn show(
                         ui,
                         &bp,
                         IconKey::Silk("page_white_stack"),
-                        pos2(x0 + 2.0, top),
+                        pos2(x0 + 2.0, top + vy),
                     );
                 }
                 let cell = Rect::from_min_max(pos2(*x0, top), pos2(*x1 - 1.0, top + row_h()));
@@ -934,7 +975,8 @@ pub fn show(
                         &bp.with_clip_rect(screen(cell.intersect(body))),
                         &font,
                         (*x0, *x1),
-                        top,
+                        top + vy,
+                        if modern { 17.0 } else { row_h() },
                         &row.cells[*c],
                     );
                     let hovered = resp
@@ -976,7 +1018,23 @@ pub fn show(
                 } else {
                     TEXT()
                 };
-                text_font(&clip, font.clone(), tx, top + 12.0, &s, ink);
+                // A download still coming in: its share as a bar under its status, the text
+                // moved up to make room.
+                let bar = row
+                    .fraction
+                    .filter(|_| modern && *c == 3 && row_h() >= 32.0 && x1 - tx >= 40.0);
+                let lift = if bar.is_some() { 5.0 } else { 0.0 };
+                text_font(&clip, font.clone(), tx, top + vy + 12.0 - lift, &s, ink);
+                if let Some(f) = bar {
+                    let y = top + vy + 12.0 - lift + 6.0;
+                    let right = (tx + 140.0).min(x1 - 8.0);
+                    winui::progress_bar(
+                        &clip,
+                        Rect::from_min_max(pos2(tx, y), pos2(right, y + 4.0)),
+                        Some(f),
+                        0.0,
+                    );
+                }
             }
         }
         // The grid line is the item's own last row (top + 16), so icons are not clipped; in
@@ -994,7 +1052,8 @@ pub fn show(
         resp.clone().on_hover_text_at_pointer(full);
     }
     filter_box(ui, st);
-    for (_, _, x1) in cols.iter().filter(|_| !rows.is_empty()) {
+    // No lines down the columns in Material's list: the rows read across.
+    for (_, _, x1) in cols.iter().filter(|_| !rows.is_empty() && !modern) {
         // One line at col.right + 1.
         fill(&bp, x1 + 1.0, body_top, x1 + 1.0, rb, GRID_V_RIGHT());
     }
@@ -1243,6 +1302,7 @@ fn chip(
     font: &egui::FontId,
     (x0, x1): (f32, f32),
     top: f32,
+    row_h: f32,
     label: &str,
 ) -> bool {
     if label.is_empty() {
@@ -1258,11 +1318,8 @@ fn chip(
     // Room: the pill starts 5 px in, pads its text 6 px each side, and ends 3 px before the cell.
     let label = &winui::ellipsize(p, font, full, (x1 - x0 - 5.0 - 12.0 - 3.0).max(0.0));
     let w = winui::text_width_font(p, font.clone(), label).round();
-    let pill = Rect::from_min_size(
-        pos2(x0 + 5.0, top + 2.0),
-        egui::vec2(w + 12.0, row_h() - 4.0),
-    );
-    p.rect_filled(winui::rect(pill), (row_h() - 4.0) / 2.0, fill);
+    let pill = Rect::from_min_size(pos2(x0 + 5.0, top + 2.0), egui::vec2(w + 12.0, row_h - 4.0));
+    p.rect_filled(winui::rect(pill), (row_h - 4.0) / 2.0, fill);
     text_font(
         p,
         font.clone(),
@@ -1556,6 +1613,7 @@ mod tests {
             status_group: status,
             icon: IconKey::Silk("page_white"),
             queued,
+            fraction: None,
             cells,
         }
     }

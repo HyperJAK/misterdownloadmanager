@@ -718,6 +718,31 @@ pub fn progress_bar(p: &Painter, rc: Rect, fraction: Option<f32>, time: f64) {
     if era_bar(p, rect(rc), from, to, c.progress_bar, rtl()) {
         return;
     }
+    // Material: a track round at its ends with no edge; the fill round too, a gap after it.
+    if crate::theme::current().controls.progress == crate::palette::ProgressLook::Material {
+        let (w, r) = (rc.width(), rc.height() / 2.0);
+        let gap = if to > from { rc.height().min(4.0) } else { 0.0 };
+        let part = |a: f32, b: f32, c: Color32| {
+            if b - a >= 1.0 {
+                p.rect_filled(
+                    rect(Rect::from_min_max(
+                        pos2(rc.left() + a, rc.top()),
+                        pos2(rc.left() + b, rc.bottom()),
+                    )),
+                    r,
+                    c,
+                );
+            }
+        };
+        let (a, b) = ((from * w).round(), (to * w).round());
+        part(0.0, a - gap, c.progress_track);
+        part(b + gap, w, c.progress_track);
+        // Never shorter than it is tall: a first percent shows as a dot.
+        if to > from {
+            part(a, b.max(a + rc.height()).min(w), c.progress_bar);
+        }
+        return;
+    }
     // Windows 8: a bordered bar, filled.
     if crate::theme::current().controls.progress == crate::palette::ProgressLook::Bar {
         let border = crate::theme::metrics().border;
@@ -1757,7 +1782,7 @@ impl Shine {
     fn of_button(look: crate::palette::ButtonLook) -> Option<Self> {
         use crate::palette::ButtonLook as B;
         match look {
-            B::Fluent | B::Breeze => None,
+            B::Fluent | B::Breeze | B::Material => None,
             B::Luna => Some(Shine::Luna),
             B::Aero => Some(Shine::Aero),
             B::Aqua => Some(Shine::Aqua),
@@ -1879,6 +1904,20 @@ pub fn meter(p: &Painter, rc: Rect, fraction: f32) {
     let radius = control_radius().min(rc.height() / 4.0).floor();
     let c = crate::theme::colors();
     if era_bar(p, rc, 0.0, fraction.clamp(0.0, 1.0), c.meter_fill, false) {
+        return;
+    }
+    // Material: round at its ends, no edge.
+    if crate::theme::current().controls.progress == crate::palette::ProgressLook::Material {
+        let r = (rc.height() / 2.0).floor();
+        p.rect_filled(rc, r, c.meter_track);
+        let w = (fraction.clamp(0.0, 1.0) * rc.width()).floor();
+        if w > 0.0 {
+            let done = Rect::from_min_size(
+                rc.min,
+                vec2(w.max(rc.height()).min(rc.width()), rc.height()),
+            );
+            p.rect_filled(done, r, c.meter_fill);
+        }
         return;
     }
     let border = crate::theme::metrics().border;
@@ -2044,6 +2083,16 @@ pub fn focus_bottom(p: &Painter, rc: Rect) {
             rc,
             control_radius(),
             Stroke::new(2.0, accent().gamma_multiply(0.5)),
+            StrokeKind::Inside,
+        );
+        return;
+    }
+    // Material: an outlined text field, its whole border in the accent, 2 points wide.
+    if crate::theme::current().controls.field_focus == crate::palette::FieldFocus::Outline {
+        p.rect_stroke(
+            rc,
+            control_radius(),
+            Stroke::new(2.0, accent()),
             StrokeKind::Inside,
         );
         return;
@@ -3737,7 +3786,16 @@ fn button_face(
         resp
     };
     if resp.has_focus() || (default_focus && ui.ctx().memory(|m| m.focused().is_none())) {
-        focus_ring_round(ui.painter(), rc.shrink(2.0), (radius - 2.0).max(0.0));
+        // Material's filled button: the ring in its label's colour, seen on the accent.
+        let filled = crate::theme::current().controls.button
+            == crate::palette::ButtonLook::Material
+            && matches!(kind, ButtonKind::Default | ButtonKind::Accent);
+        let ink = if filled {
+            face.text
+        } else {
+            crate::theme::colors().focus_ring
+        };
+        focus_ring_in(ui.painter(), rc.shrink(2.0), (radius - 2.0).max(0.0), ink);
     }
     if cut {
         resp.on_hover_text(label.replace('&', ""))
@@ -3767,8 +3825,8 @@ fn paint_button(
         _ if part => control_radius().min((rc.height() / 3.0).floor()),
         ButtonLook::Fluent | ButtonLook::Breeze => control_radius(),
         ButtonLook::Luna | ButtonLook::Aero => m.button_radius,
-        // Mac OS X's push buttons are round at the ends.
-        ButtonLook::Aqua => (rc.height() / 2.0).floor(),
+        // Mac OS X's and Material's push buttons are round at the ends.
+        ButtonLook::Aqua | ButtonLook::Material => (rc.height() / 2.0).floor(),
     };
     let Some(shine) = Shine::of_button(look) else {
         p.rect_filled(rc, radius, face.fill);
@@ -3779,8 +3837,9 @@ fn paint_button(
             StrokeKind::Inside,
         );
         // The bottom edge: a push button's and a drop-down's 3 points in from its ends, a small
-        // part's from its corners (none on one too low for it).
-        if shape != Shape::Small || rc.height() >= 14.0 {
+        // part's from its corners (none on one too low for it, none in Material: its buttons
+        // are flat).
+        if look != ButtonLook::Material && (shape != Shape::Small || rc.height() >= 14.0) {
             let inset = if shape == Shape::Small { radius } else { 3.0 };
             hline(
                 p,
@@ -3865,6 +3924,11 @@ fn button_colors_in(
             border: crate::derive::shade(face.fill, -0.12),
             ..face
         };
+    }
+    // Material: the default button is the filled one (the accent, its text on it); the others
+    // are outlined.
+    if look == crate::palette::ButtonLook::Material && kind == ButtonKind::Default {
+        return button_colors_in(ButtonKind::Accent, state, c, look);
     }
     if kind == ButtonKind::Accent {
         // The accent filled, a shade lighter under the pointer and darker pressed.
@@ -4034,11 +4098,16 @@ pub fn focus_ring(p: &Painter, rc: Rect) {
 /// [`focus_ring`] whose ring or frame (where the theme draws one) has corners of `radius`: a
 /// control rounded otherwise than the others (Mac OS X's push buttons, round at the ends).
 pub fn focus_ring_round(p: &Painter, rc: Rect, radius: f32) {
+    focus_ring_in(p, rc, radius, crate::theme::colors().focus_ring);
+}
+
+/// [`focus_ring_round`] in `ink`: on a face the theme's own focus ink wouldn't show against
+/// (Material's filled button is the accent, as its ring).
+fn focus_ring_in(p: &Painter, rc: Rect, radius: f32, ink: Color32) {
     // Only once the keyboard is in use in this window, as Windows shows focus rectangles.
     if !keyboard_in_use(p.ctx()) {
         return;
     }
-    let ink = crate::theme::colors().focus_ring;
     // GNOME: a rounded ring, as wide as two points, the controls' corners.
     match crate::theme::current().controls.focus {
         crate::palette::FocusLook::Ring => {
@@ -4323,8 +4392,11 @@ pub fn check_box_glyph(p: &Painter, rc: Rect, checked: bool, state: State) {
         return;
     }
     // GNOME: a 2-point border at rest (its inside tinted under the pointer), the accent filled
-    // with a light tick, 2 points wide, when checked.
-    if crate::theme::current().controls.check == crate::palette::CheckLook::Adwaita {
+    // with a light tick, 2 points wide, when checked. Material's check box is drawn the same.
+    if matches!(
+        crate::theme::current().controls.check,
+        crate::palette::CheckLook::Adwaita | crate::palette::CheckLook::Material
+    ) {
         let m = crate::theme::metrics();
         if checked {
             p.rect_filled(rc, m.check_radius, fluent_accent(state));
@@ -4590,6 +4662,13 @@ pub fn radio_light_until(
         if selected {
             p.circle_filled(c, 2.5, breeze_mark(state));
         }
+    } else if selected
+        && crate::theme::current().controls.check == crate::palette::CheckLook::Material
+    {
+        // Material: the ring stays, in the accent, around a dot of it.
+        let ink = fluent_accent(state);
+        p.circle_stroke(c, 5.5, Stroke::new(2.0, ink));
+        p.circle_filled(c, 2.5, ink);
     } else if selected {
         p.circle_filled(c, 6.5, fluent_accent(state));
         // Windows 11's dot grows under the pointer and shrinks while pressed.
@@ -4604,8 +4683,11 @@ pub fn radio_light_until(
         if let Some(f) = fill_c {
             p.circle_filled(c, 6.0, f);
         }
-        // GNOME's ring is two points wide, as its check boxes' edge.
-        let adwaita = crate::theme::current().controls.check == crate::palette::CheckLook::Adwaita;
+        // GNOME's ring is two points wide, as its check boxes' edge; Material's too.
+        let adwaita = matches!(
+            crate::theme::current().controls.check,
+            crate::palette::CheckLook::Adwaita | crate::palette::CheckLook::Material
+        );
         if adwaita {
             p.circle_stroke(c, 5.5, Stroke::new(2.0, ring));
         } else {
@@ -5093,6 +5175,44 @@ mod tab_row_tests {
     }
 }
 
+/// A tab in the theme's flat style (`palette::TabLook::Underline`, Material's) in `rc` (on
+/// screen, its last row the page's top line): a tint under the pointer, and under the chosen one
+/// a line in the accent, over the page's own. Its label's colour; None, drawing nothing, where
+/// the theme frames its tabs.
+pub fn flat_tab(p: &Painter, rc: Rect, sel: bool, hot: bool) -> Option<Color32> {
+    if crate::theme::current().controls.tabs != crate::palette::TabLook::Underline {
+        return None;
+    }
+    let c = crate::theme::colors();
+    let top = egui::CornerRadius {
+        nw: 4,
+        ne: 4,
+        sw: 0,
+        se: 0,
+    };
+    if hot {
+        let face = Rect::from_min_max(rc.min, pos2(rc.right(), rc.bottom() - 1.0));
+        p.rect_filled(face, top, c.subtle_hot);
+    }
+    if sel {
+        let line = Rect::from_min_max(
+            pos2(rc.left() + 4.0, rc.bottom() - 3.0),
+            pos2(rc.right() - 4.0, rc.bottom()),
+        );
+        p.rect_filled(
+            line,
+            egui::CornerRadius {
+                nw: 2,
+                ne: 2,
+                sw: 0,
+                se: 0,
+            },
+            c.accent,
+        );
+    }
+    Some(if sel { c.link } else { c.muted })
+}
+
 /// Light tab control in `rc` (client rect of the whole control): the pane and the tabs.
 /// Returns the tab clicked this frame.
 pub fn tabs_light(
@@ -5117,8 +5237,12 @@ pub fn tabs_light(
     hline(&p, l, rr, b, border);
     vline(&p, l, t, b, border);
     vline(&p, rr, t, b, border);
-    fill(&p, rr + 1.0, t, rr + 2.0, b + 1.0, shadow);
-    hline(&p, l, rr + 2.0, b + 1.0, shadow);
+    // Flat tabs (Material): the page casts no shadow, and the chosen tab keeps the others' size.
+    let flat = crate::theme::current().controls.tabs == crate::palette::TabLook::Underline;
+    if !flat {
+        fill(&p, rr + 1.0, t, rr + 2.0, b + 1.0, shadow);
+        hline(&p, l, rr + 2.0, b + 1.0, shadow);
+    }
     // (selected range, unselected range, label x, label shown), from the client origin.
     type Placed = ((f32, f32), (f32, f32), f32, String);
     let placed: Vec<Placed> = if tabs.iter().all(|t| crate::i18n::t(t.label) == t.label) {
@@ -5141,11 +5265,15 @@ pub fn tabs_light(
     let mut clicked = None;
     let mut draw = |i: usize, tab: &LightTab, sel: bool| {
         let (sel_x, unsel_x, label_x, shown) = &placed[i];
-        let (x0, x1) = if sel { *sel_x } else { *unsel_x };
+        let (x0, x1) = if sel && !flat { *sel_x } else { *unsel_x };
         // English pixel columns; the tabs run from the leading edge.
         let (a, b) = (mcol(o.x + x0), mcol(o.x + x1));
         let (x0, x1) = (a.min(b), a.max(b));
-        let y0 = if sel { rc.top() } else { rc.top() + 2.0 };
+        let y0 = if sel && !flat {
+            rc.top()
+        } else {
+            rc.top() + 2.0
+        };
         let hit = Rect::from_min_max(pos2(x0, y0), pos2(x1 + 1.0, t));
         // Keyed by the control's place and the tab's index: its x changes when it is chosen,
         // and the focus must stay on it.
@@ -5189,30 +5317,34 @@ pub fn tabs_light(
                 }
             }
         }
-        let face = if sel {
-            LIGHT_PAGE()
-        } else if resp.hovered() {
-            TAB_HOT()
-        } else {
-            shadow
-        };
-        fill(&p, x0, y0, x1, t, face);
-        hline(&p, x0 + 1.0, x1 - 1.0, y0, border);
-        vline(&p, x0, y0 + 1.0, t, border);
-        vline(&p, x1, y0 + 1.0, t, border);
-        if sel {
-            // Open at the bottom: the pane's top line stops at the tab.
-            hline(&p, x0 + 1.0, x1 - 1.0, t, LIGHT_PAGE());
-        } else {
-            hline(&p, x0, x1, t, border);
-        }
-        let base = if sel {
+        let tab_rc = Rect::from_min_max(pos2(x0, y0), pos2(x1 + 1.0, t + 1.0));
+        let ink = flat_tab(&p, tab_rc, sel, resp.hovered() && !sel).unwrap_or_else(|| {
+            let face = if sel {
+                LIGHT_PAGE()
+            } else if resp.hovered() {
+                TAB_HOT()
+            } else {
+                shadow
+            };
+            fill(&p, x0, y0, x1, t, face);
+            hline(&p, x0 + 1.0, x1 - 1.0, y0, border);
+            vline(&p, x0, y0 + 1.0, t, border);
+            vline(&p, x1, y0 + 1.0, t, border);
+            if sel {
+                // Open at the bottom: the pane's top line stops at the tab.
+                hline(&p, x0 + 1.0, x1 - 1.0, t, LIGHT_PAGE());
+            } else {
+                hline(&p, x0, x1, t, border);
+            }
+            LIGHT_TEXT()
+        });
+        let base = if sel && !flat {
             rc.top() + 13.0
         } else {
             rc.top() + 15.0
         };
         let full = crate::i18n::t(tab.label);
-        let drawn = text(&p, o.x + label_x, base, shown, LIGHT_TEXT());
+        let drawn = text(&p, o.x + label_x, base, shown, ink);
         // Over the tab's face (drawn before it, the face hid it).
         show_focus(ui, &resp, hit.shrink(2.0));
         if shown != full {
@@ -7002,6 +7134,14 @@ mod tests {
                     }
                     continue;
                 }
+                // Material: a state layer over the face under the pointer, a stronger one
+                // pressed; the label and the edge stay.
+                if look == B::Material {
+                    assert_ne!(hot.fill, rest.fill, "hot lays a tint over the face");
+                    assert_ne!(pressed.fill, hot.fill, "pressed lays a stronger one");
+                    assert_eq!(pressed.text, rest.text, "the label stays");
+                    continue;
+                }
                 assert_ne!(pressed.text, rest.text, "pressed dims the label");
                 assert_eq!(
                     pressed.bottom, pressed.border,
@@ -7024,6 +7164,17 @@ mod tests {
             }
             let disabled = button_colors(ButtonKind::Disabled, State::Disabled, c);
             let enabled = button_colors(ButtonKind::Normal, State::Normal, c);
+            // Material's label is the accent, not a grey: told from the greyed one by how much
+            // less it stands out from its face.
+            if look == crate::palette::ButtonLook::Material {
+                use crate::derive::contrast;
+                assert!(
+                    contrast(enabled.text, enabled.fill)
+                        >= contrast(disabled.text, disabled.fill) + 3.0,
+                    "disabled text is clearly dimmer"
+                );
+                return;
+            }
             let gap = |a: Color32, b: Color32| (a.r() as i32 - b.r() as i32).abs();
             assert!(
                 gap(disabled.text, enabled.text) >= 0x50,

@@ -1508,6 +1508,7 @@ pub fn toolbar(
     let (font, base_w, band_h) = (winui::tahoma(), 66.0f32, 68.0);
     let band = Rect::from_min_size(pos2(o.x, top + 2.0), vec2(width, band_h));
     p.rect_filled(band, 0.0, WINDOW_BG());
+    let modern = crate::theme::current().controls.layout == crate::palette::LayoutLook::Modern;
     let mut x = o.x;
     let mut event = None;
     let is_dropdown =
@@ -1547,6 +1548,16 @@ pub fn toolbar(
         let resp = ui.interact(rc, egui::Id::unique(("tb", i)), winui::pointer_only());
         let resp = if cut { resp.on_hover_text(full) } else { resp };
         let past_button = |q: Pos2| winui::mx(q.x) >= x + bw;
+        // Material's toolbar (`palette::LayoutLook::Modern`): the first button, the one that
+        // adds a download, sits on a round fill in the selection's colour; the others light up
+        // round under the pointer.
+        if modern && i == 0 && *enabled {
+            let face = winui::rect(Rect::from_min_size(
+                pos2(x + 3.0, band.top() + 3.0),
+                vec2(bw - 6.0, 59.0),
+            ));
+            p.rect_filled(face, 14.0, c.selection);
+        }
         if *enabled && resp.hovered() {
             // Hover (IDM 6.42, captured 2026-10-30): the button's own width, from the band's top,
             // square. Dark: a flat #33414d. Light: Windows' hot button, #e5f3ff with a 1 px
@@ -1577,6 +1588,10 @@ pub fn toolbar(
                     (true, false) => hot_c,
                     (false, _) => faint_c,
                 };
+                if modern {
+                    p.rect_filled(r.shrink2(vec2(2.0, 3.0)), 14.0, c);
+                    return;
+                }
                 p.rect_filled(r, 0.0, c);
                 // None in the dark look (a transparent border isn't drawn).
                 p.rect_stroke(
@@ -1589,6 +1604,8 @@ pub fn toolbar(
             lit(main, !on_arrow);
             if dropdown {
                 lit(arrow, on_arrow);
+            }
+            if dropdown && !modern {
                 // The divider: the parts' shared edge, one line.
                 winui::fill_l(
                     &p,
@@ -1630,7 +1647,7 @@ pub fn toolbar(
             // The split's divider at rest (user choice 2026-10-29, "B"): a classic etched
             // toolbar separator — a shadow line and a highlight beside it — 24 px tall, centred
             // on the arrow; the hover draws the full divider instead.
-            if !(*enabled && resp.hovered()) {
+            if !(*enabled && resp.hovered()) && !modern {
                 let (shadow, light) = (c.toolbar_split_shadow, c.toolbar_split_light);
                 let (y0, y1) = (ay - 10.0, ay + 13.0);
                 winui::fill_l(&p, x + bw - 1.0, y0, x + bw - 1.0, y1, shadow);
@@ -1754,6 +1771,12 @@ pub fn categories(
     keys: bool,
 ) -> Option<TreeEvent> {
     let p = ui.painter().clone();
+    // Material's navigation pane (`palette::LayoutLook::Modern`): rows as tall as the theme
+    // says, their icon and label centred (`vy` lower), the chosen one a pill across the pane,
+    // chevrons and no connectors, no frame.
+    let modern = crate::theme::current().controls.layout == crate::palette::LayoutLook::Modern;
+    let rh = crate::theme::metrics().tree_row.max(16.0);
+    let vy = ((rh - 16.0) / 2.0).floor();
     let y0 = o.y + pane_top() + MENU_H; // frame top
     // Laid out in English (frame x 6 .. right); every part made where it is on screen — the pane
     // on the right in RTL, its tree indenting from the right.
@@ -1761,25 +1784,37 @@ pub fn categories(
         pos2(o.x + 6.0, y0),
         pos2(right, bottom - 5.0),
     ));
-    p.rect_stroke(
-        frame,
-        0.0,
-        Stroke::new(1.0, CAT_FRAME()),
-        egui::StrokeKind::Inside,
-    );
-    winui::fill_l(
-        &p,
-        o.x + 6.0,
-        y0 + 18.0,
-        right - 1.0,
-        y0 + 18.0,
-        CAT_FRAME(),
-    ); // caption underline
+    if modern {
+        p.rect_filled(frame, 0.0, TREE_BG());
+    } else {
+        p.rect_stroke(
+            frame,
+            0.0,
+            Stroke::new(1.0, CAT_FRAME()),
+            egui::StrokeKind::Inside,
+        );
+        winui::fill_l(
+            &p,
+            o.x + 6.0,
+            y0 + 18.0,
+            right - 1.0,
+            y0 + 18.0,
+            CAT_FRAME(),
+        ); // caption underline
+    }
     // i18n: title of the side pane that lists the categories
     let caption = crate::i18n::t("Categories");
     // Short of the close box: in a narrow pane or a long translation, "..." and whole on hover.
     let shown = winui::ellipsize(&p, &winui::tahoma(), caption, right - 21.0 - (o.x + 12.0));
-    let drawn = text_font(&p, winui::tahoma(), o.x + 12.0, y0 + 13.0, &shown, TEXT());
+    let caption_ink = if modern { winui::MUTED() } else { TEXT() };
+    let drawn = text_font(
+        &p,
+        winui::tahoma(),
+        o.x + 12.0,
+        y0 + 13.0,
+        &shown,
+        caption_ink,
+    );
     if shown != caption {
         winui::full_on_hover(ui, drawn, "categories-caption", caption);
     }
@@ -1811,7 +1846,7 @@ pub fn categories(
 
     // Scroll bars (notes/ui-spec/scrollbars.md "Categories tree"): by rows vertically, by
     // pixels horizontally; each shows when the content overflows (Win32 rule).
-    let content_h = rows.len() as f32 * 16.0;
+    let content_h = rows.len() as f32 * rh;
     let content_w = rows
         .iter()
         .map(|r| {
@@ -1843,9 +1878,9 @@ pub fn categories(
         .ctx()
         .data(|d| d.get_temp::<(f32, f32)>(scroll_id))
         .unwrap_or_default();
-    let page_rows = (area.height() / 16.0).floor().max(1.0);
+    let page_rows = (area.height() / rh).floor().max(1.0);
     if ui.rect_contains_pointer(winui::rect(tree)) {
-        vpos += winui::wheel_rows(ui, 16.0, page_rows);
+        vpos += winui::wheel_rows(ui, rh, page_rows);
         hpos -= ui.input(|i| i.smooth_scroll_delta.x);
     }
     vpos = vpos.clamp(0.0, (rows.len() as f32 - page_rows).max(0.0));
@@ -1854,7 +1889,7 @@ pub fn categories(
     // Everything below is laid out from a horizontally scrolled origin.
     let o = pos2(o.x - hpos, o.y);
     let tp = p.with_clip_rect(winui::rect(area));
-    let row_top = |k: usize| area.top() + 16.0 * (k as f32 - first_row);
+    let row_top = |k: usize| area.top() + rh * (k as f32 - first_row);
     // Blank space (registered first, so the rows sit above it): the selected node's menu, at
     // the pointer (IDM places it beside the node; user decision: at the pointer).
     let blank = ui.interact(
@@ -1883,7 +1918,7 @@ pub fn categories(
 
     // Connector dots (#6d6d6d, every other pixel), painted first; expander boxes cover them.
     let roots: Vec<usize> = (0..rows.len()).filter(|&k| rows[k].level == 0).collect();
-    if let (Some(&first), Some(&last)) = (roots.first(), roots.last()) {
+    if let (Some(&first), Some(&last), false) = (roots.first(), roots.last(), modern) {
         let mut y = row_top(first);
         while y <= row_top(last) + 8.0 {
             if (y - tree.top()) as i32 % 2 == 0 {
@@ -1900,7 +1935,7 @@ pub fn categories(
         }
     }
     for (k, r) in rows.iter().enumerate() {
-        if r.level == 1 {
+        if r.level == 1 && !modern {
             let mut x = o.x + 38.0;
             while x <= o.x + 48.0 {
                 winui::px_l(&tp, x, row_top(k) + 8.0, TREE_LINES());
@@ -1930,9 +1965,29 @@ pub fn categories(
             continue;
         }
         let icon_x = o.x + if r.level == 0 { 30.0 } else { 49.0 };
-        let text_x = o.x + if r.level == 0 { 51.0 } else { 70.0 };
+        let text_x = o.x + if r.level == 0 { 51.0 } else { 70.0 } + if modern { 4.0 } else { 0.0 };
         let ext = text_width_font(&p, winui::tahoma(), crate::i18n::t(&r.label));
-        if r.selected {
+        // The pill of Material's rows: the chosen one's fill, a tint under the pointer.
+        let pill = winui::rect(Rect::from_min_max(
+            pos2(area.left() + 4.0, top + 1.0),
+            pos2(area.right() - 4.0, top + rh - 1.0),
+        ));
+        let (ink, count_ink) = if modern && r.selected {
+            (
+                winui::SELECTION_TEXT(),
+                crate::theme::colors().selection_muted,
+            )
+        } else {
+            (TEXT(), winui::MUTED())
+        };
+        if modern {
+            let hot = ui.rect_contains_pointer(pill.intersect(winui::rect(area)));
+            if r.selected {
+                tp.rect_filled(pill, (rh / 2.0).floor(), crate::theme::colors().selection);
+            } else if hot {
+                tp.rect_filled(pill, (rh / 2.0).floor(), crate::theme::colors().subtle_hot);
+            }
+        } else if r.selected {
             // The inactive selection grey behind the label, in both modes (#f0f0f0 on the white
             // tree could not be seen).
             winui::fill_l(
@@ -1944,8 +1999,12 @@ pub fn categories(
                 winui::SELECTED_INACTIVE(),
             );
         }
+        let top_row = top;
+        let top = top + vy;
         if let Some(open) = r.expander {
-            if crate::theme::colors().tree_chevrons {
+            if modern {
+                nav_chevron(&tp, o.x + 19.0, top + 8.0, open, ink);
+            } else if crate::theme::colors().tree_chevrons {
                 winui::fill_l(&tp, o.x + 11.0, top, o.x + 26.0, top + 15.0, TREE_BG());
                 chevron(&tp, o.x, top, open, r.selected);
             } else {
@@ -1973,16 +2032,20 @@ pub fn categories(
             text_x,
             top + 11.0,
             crate::i18n::t(&r.label),
-            TEXT(),
+            ink,
         );
         if keys && r.selected {
-            winui::focus_ring(
-                &tp,
-                winui::rect(Rect::from_min_max(
-                    pos2(text_x - 3.0, top),
-                    pos2(text_x + ext + 3.0, top + 16.0),
-                )),
-            );
+            if modern {
+                winui::focus_ring_round(&tp, pill, (rh / 2.0).floor());
+            } else {
+                winui::focus_ring(
+                    &tp,
+                    winui::rect(Rect::from_min_max(
+                        pos2(text_x - 3.0, top),
+                        pos2(text_x + ext + 3.0, top + 16.0),
+                    )),
+                );
+            }
         }
         if let Some(n) = r.count {
             let count = count_text(n);
@@ -1992,12 +2055,13 @@ pub fn categories(
                 text_x + ext + 5.0,
                 top + 11.0,
                 &count,
-                winui::MUTED(),
+                count_ink,
             );
         }
+        let top = top_row;
 
         let row = winui::rect(
-            Rect::from_min_size(pos2(area.left(), top), vec2(area.width(), 16.0)).intersect(area),
+            Rect::from_min_size(pos2(area.left(), top), vec2(area.width(), rh)).intersect(area),
         );
         let resp = rows_ui.interact(
             row,
@@ -2127,6 +2191,21 @@ pub fn categories(
     ui.ctx()
         .data_mut(|d| d.insert_temp(scroll_id, (vpos, hpos)));
     event
+}
+
+/// A navigation row's chevron (Material's pane), centred on English (`x`, `cy`): pointing into
+/// the row when shut (to the left in RTL), down when open, in the row's ink.
+fn nav_chevron(p: &egui::Painter, x: f32, cy: f32, open: bool, ink: Color32) {
+    let pts = if open {
+        [(-3.5, -1.5), (0.0, 2.0), (3.5, -1.5)]
+    } else {
+        [(-1.5, -3.5), (2.0, 0.0), (-1.5, 3.5)]
+    };
+    let pts = pts
+        .iter()
+        .map(|(dx, dy)| pos2(winui::mx(x + dx), cy + dy))
+        .collect();
+    p.line(pts, Stroke::new(1.5, ink));
 }
 
 /// Light mode's classic 9×9 +/- box at x 15..23, y top+4..top+12 (light-main.md grids).
